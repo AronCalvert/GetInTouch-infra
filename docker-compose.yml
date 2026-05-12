@@ -1,0 +1,94 @@
+
+# build and start all services
+#   docker compose up --build
+
+# rebuild only changes and start all services
+#   docker compose up -d
+
+# build only the images
+#   docker compose build
+
+# start all services
+#   docker compose up
+
+# stop all services
+#   docker compose down
+
+# stop all services and remove volumes (if you want a fresh postgresql database)
+#   docker compose down -v
+
+# Volumes are files that would not regularly be included in the image
+# But are needed for the app to run
+
+services:
+  postgres:
+    image: postgres:15
+    container_name: postgres_db
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - app-network
+    restart: unless-stopped
+
+  backend:
+    build:
+      context: ../backend    # explicit path on VPS
+      dockerfile: Dockerfile
+    container_name: springboot_app
+    expose:
+      - "8080"                     # not public, nginx talks to it internally
+    environment:
+      SPRING_DATASOURCE_URL: ${SPRING_DATASOURCE_URL}
+      SPRING_DATASOURCE_USERNAME: ${SPRING_DATASOURCE_USERNAME}
+      SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRATION: ${JWT_EXPIRATION}
+      ADMIN_SECRET: ${ADMIN_SECRET}
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE}
+      LOGGING_LEVEL_ROOT: ${LOGGING_LEVEL_ROOT}
+      LOGGING_LEVEL_SPRING_SECURITY: ${LOGGING_LEVEL_SPRING_SECURITY}
+      LOGGING_LEVEL_SPRING_WEB: ${LOGGING_LEVEL_SPRING_WEB}
+      LOGGING_LEVEL_APP: ${LOGGING_LEVEL_APP}
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS}
+    depends_on:
+      - postgres
+    networks:
+      - app-network
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ../frontend  # explicit path on VPS
+      dockerfile: Dockerfile
+    container_name: react_app
+    expose:
+      - "80"                       # nginx talks to it internally
+    depends_on:
+      - backend
+    networks:
+      - app-network
+    restart: unless-stopped
+
+  nginx:
+    image: nginx:alpine
+    container_name: nginx
+    ports:
+      - "80:80"                    # only nginx is public-facing
+    volumes:
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - frontend
+      - backend
+    networks:
+      - app-network
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+
+networks:
+  app-network:
