@@ -28,7 +28,7 @@ jobs:
       - name: Checkout backend
         uses: actions/checkout@v4
         with:
-          repository: VenturiVen/GetInTouch-Backend
+          repository: AronCalvert/GetinTouch-Backend
           token: ${{ secrets.DEPLOY_PAT }}
 
       - name: Set up Java
