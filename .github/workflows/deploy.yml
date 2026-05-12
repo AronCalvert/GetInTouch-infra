@@ -38,6 +38,15 @@ jobs:
           distribution: 'temurin'
 
       - name: Run tests
+        env:
+          JWT_SECRET: test-secret-key-for-ci-only
+          JWT_EXPIRATION: 86400000
+          ADMIN_SECRET: test-admin-secret
+          SPRING_PROFILES_ACTIVE: test
+          LOGGING_LEVEL_ROOT: ERROR
+          LOGGING_LEVEL_SPRING_SECURITY: ERROR
+          LOGGING_LEVEL_SPRING_WEB: ERROR
+          LOGGING_LEVEL_APP: ERROR
         run: mvn test
 
   deploy:
